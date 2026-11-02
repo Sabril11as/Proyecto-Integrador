@@ -1,0 +1,5562 @@
+{
+  "info": {
+    "_postman_id": "0ac3e8a4-c9f7-425b-8547-9e63db23e2f5",
+    "name": "API REST Tienda - Coleccion de Pruebas (16 modulos)",
+    "description": "COLECCION DE PRUEBAS ACADEMICA - 16 MODULOS / 126 PETICIONES\n\n1. Ejecuta MongoDB y node server.js.\n2. Revisa la variable baseUrl (por defecto http://localhost:5001).\n3. Crea una vez el usuario admin.postman@example.com con la clave de ejemplo guardada en adminPassword. Desde mongosh en la base profeMario asigna su rol admin: db.usuarios.updateOne({correo:\"admin.postman@example.com\"},{$set:{rol:\"admin\"}}).\n4. En Postman, usa Run Collection y ejecuta las peticiones EN ORDEN, de la carpeta 01 a la 16.\n5. La primera petición genera un correo único y guarda las variables de cliente; los siguientes POST guardan los IDs necesarios.\n6. Los casos marcados (error) deben responder con su codigo esperado 400, 401, 403 o 404; eso es una prueba exitosa.\n7. Las pruebas crean, actualizan y eliminan datos: usar solo una base de datos local/de pruebas.\n8. Si el runner muestra FAIL, revisar respuesta, autenticacion, IDs, datos previos y codigo del endpoint.\n9. Guardar capturas del runner y de MongoDB como evidencia; no compartir tokens ni contrasenas reales.\n\nNOTA: La coleccion es importable y los scripts fueron revisados; las respuestas dependen de tu API local y se deben ejecutar para verificar que pasan.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Autenticacion",
+      "item": [
+        {
+          "name": "01 Registrar cliente (guarda usuarioId y tokenCliente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Prueba\",\n  \"correo\": \"{{clienteCorreo}}\",\n  \"telefono\": \"88888888\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/registro\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON).\n\nNotas: Primera petición del recorrido. Genera un correo único y guarda el ID y JWT del cliente."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const runId = Date.now().toString();",
+                  "pm.collectionVariables.set(\"runId\", runId);",
+                  "pm.collectionVariables.set(\"clienteCorreo\", \"cliente.\" + runId + \"@example.com\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.usuario && (datos.usuario.id || datos.usuario._id) !== undefined && datos.usuario && (datos.usuario.id || datos.usuario._id) !== null) pm.collectionVariables.set(\"usuarioId\", datos.usuario && (datos.usuario.id || datos.usuario._id));",
+                  "  if (datos.token !== undefined && datos.token !== null) pm.collectionVariables.set(\"tokenCliente\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Iniciar sesion cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{clienteCorreo}}\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/login\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.token !== undefined && datos.token !== null) pm.collectionVariables.set(\"tokenCliente\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar perfil con JWT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "perfil"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/autenticacion/perfil\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Consultar perfil sin JWT (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "perfil"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/autenticacion/perfil\nCodigo HTTP esperado: 401\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Registro duplicado (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Repetido\",\n  \"correo\": \"{{clienteCorreo}}\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/registro\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Registro sin nombre (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"sin.nombre@example.com\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/registro\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Login con clave incorrecta (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{clienteCorreo}}\",\n  \"password\": \"ClaveIncorrecta2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/login\nCodigo HTTP esperado: 401\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Iniciar sesion administrador (guarda tokenAdmin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/autenticacion/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "autenticacion",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{adminCorreo}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/autenticacion/login\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON).\n\nNotas: Requiere crear la cuenta de administrador y cambiarle rol a admin en MongoDB siguiendo el README."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.token !== undefined && datos.token !== null) pm.collectionVariables.set(\"tokenAdmin\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 1 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "02 - Usuarios",
+      "item": [
+        {
+          "name": "01 Crear usuario adicional",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Extra\",\n  \"correo\": \"usuario.extra.{{runId}}@example.com\",\n  \"telefono\": \"87777777\",\n  \"password\": \"PruebaExtra2026!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/usuarios\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.usuario && (datos.usuario.id || datos.usuario._id) !== undefined && datos.usuario && (datos.usuario.id || datos.usuario._id) !== null) pm.collectionVariables.set(\"usuarioExtraId\", datos.usuario && (datos.usuario.id || datos.usuario._id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar usuarios como administrador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/usuarios\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Listar usuarios como cliente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/usuarios\nCodigo HTTP esperado: 403\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Consultar mi usuario por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/usuarios/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Actualizar mi usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Actualizado\",\n  \"telefono\": \"89999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/usuarios/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Buscar usuario inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/usuarios/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Eliminar usuario adicional como admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/{{usuarioExtraId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "{{usuarioExtraId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/usuarios/{{usuarioExtraId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 2 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "03 - Perfil",
+      "item": [
+        {
+          "name": "01 Consultar perfil por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/perfil/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "perfil",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/perfil/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Actualizar perfil",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/perfil/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "perfil",
+                "{{usuarioId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"80001111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/perfil/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar perfil sin JWT (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/perfil/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "perfil",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/perfil/{{usuarioId}}\nCodigo HTTP esperado: 401\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Consultar perfil ajeno como cliente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/perfil/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "perfil",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/perfil/000000000000000000000000\nCodigo HTTP esperado: 403\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 3 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "04 - Categorias",
+      "item": [
+        {
+          "name": "01 Crear categoria (guarda categoriaId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Electronica {{runId}}\",\n  \"descripcion\": \"Accesorios y tecnologia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/categorias\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.categoria && datos.categoria._id !== undefined && datos.categoria && datos.categoria._id !== null) pm.collectionVariables.set(\"categoriaId\", datos.categoria && datos.categoria._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar categorias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/categorias\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar categoria por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/categorias/{{categoriaId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Actualizar categoria",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tecnologia {{runId}}\",\n  \"descripcion\": \"Computadoras y accesorios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/categorias/{{categoriaId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Crear categoria duplicada (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Tecnologia {{runId}}\",\n  \"descripcion\": \"Duplicada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/categorias\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Crear categoria sin nombre (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Incompleta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/categorias\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Buscar categoria inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/categorias/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Crear categoria temporal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Temporal {{runId}}\",\n  \"descripcion\": \"Solo para borrar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/categorias\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.categoria && datos.categoria._id !== undefined && datos.categoria && datos.categoria._id !== null) pm.collectionVariables.set(\"categoriaTemporalId\", datos.categoria && datos.categoria._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Eliminar categoria temporal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categorias/{{categoriaTemporalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categorias",
+                "{{categoriaTemporalId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/categorias/{{categoriaTemporalId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 4 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "05 - Catalogo",
+      "item": [
+        {
+          "name": "01 Crear producto principal (guarda productoId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Laptop Prueba {{runId}}\",\n  \"descripcion\": \"16GB RAM\",\n  \"precio\": 450000,\n  \"stock\": 10,\n  \"categoria\": \"{{categoriaId}}\",\n  \"imagen\": \"https://example.com/laptop.jpg\",\n  \"destacado\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/catalogo\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.producto && datos.producto._id !== undefined && datos.producto && datos.producto._id !== null) pm.collectionVariables.set(\"productoId\", datos.producto && datos.producto._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Obtener productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/catalogo\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Obtener producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "{{productoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/catalogo/{{productoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Actualizar precio y nombre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "{{productoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Laptop Lenovo Prueba {{runId}}\",\n  \"precio\": 425000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/catalogo/{{productoId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Crear producto con precio negativo (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto invalido\",\n  \"precio\": -10,\n  \"stock\": 2,\n  \"categoria\": \"{{categoriaId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/catalogo\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Crear producto con categoria inexistente (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto invalido\",\n  \"precio\": 100,\n  \"categoria\": \"000000000000000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/catalogo\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Obtener producto inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/catalogo/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Crear producto temporal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Mouse Temporal {{runId}}\",\n  \"precio\": 15000,\n  \"stock\": 5,\n  \"categoria\": \"{{categoriaId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/catalogo\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.producto && datos.producto._id !== undefined && datos.producto && datos.producto._id !== null) pm.collectionVariables.set(\"productoTemporalId\", datos.producto && datos.producto._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Eliminar producto temporal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/{{productoTemporalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "{{productoTemporalId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/catalogo/{{productoTemporalId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 5 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "06 - Busqueda y Filtros",
+      "item": [
+        {
+          "name": "01 Todos los productos activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Buscar por nombre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?nombre=Laptop",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Laptop"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?nombre=Laptop\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Buscar por categoria",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?categoria={{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "{{categoriaId}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?categoria={{categoriaId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Filtrar por rango de precios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?precioMin=100000&precioMax=500000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "precioMin",
+                  "value": "100000"
+                },
+                {
+                  "key": "precioMax",
+                  "value": "500000"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?precioMin=100000&precioMax=500000\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Combinar nombre y precio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?nombre=Laptop&precioMin=200000&precioMax=600000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Laptop"
+                },
+                {
+                  "key": "precioMin",
+                  "value": "200000"
+                },
+                {
+                  "key": "precioMax",
+                  "value": "600000"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?nombre=Laptop&precioMin=200000&precioMax=600000\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Precio minimo invalido (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?precioMin=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "precioMin",
+                  "value": "abc"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?precioMin=abc\nCodigo HTTP esperado: 400\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Rango invertido (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?precioMin=600000&precioMax=100000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "precioMin",
+                  "value": "600000"
+                },
+                {
+                  "key": "precioMax",
+                  "value": "100000"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?precioMin=600000&precioMax=100000\nCodigo HTTP esperado: 400\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Sin resultados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/busqueda-filtro?nombre=NoExisteProductoXYZ",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "busqueda-filtro"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "NoExisteProductoXYZ"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/busqueda-filtro?nombre=NoExisteProductoXYZ\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 6 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "07 - Destacados",
+      "item": [
+        {
+          "name": "01 Listar destacados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destacados",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "destacados"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/destacados\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Quitar producto de destacados",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "{{productoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destacado\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/catalogo/{{productoId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar destacados sin principal",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destacados",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "destacados"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/destacados\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Volver a destacar producto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogo/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogo",
+                "{{productoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destacado\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/catalogo/{{productoId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Consultar destacados nuevamente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destacados",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "destacados"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/destacados\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 7 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "08 - Inventario",
+      "item": [
+        {
+          "name": "01 Inventario completo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/inventario\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Inventario por producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "{{productoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/inventario/{{productoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Agregar cinco unidades",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/{{productoId}}/agregar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "{{productoId}}",
+                "agregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/inventario/{{productoId}}/agregar\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Descontar tres unidades",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/{{productoId}}/descontar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "{{productoId}}",
+                "descontar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/inventario/{{productoId}}/descontar\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Descontar mas que stock (error)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/{{productoId}}/descontar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "{{productoId}}",
+                "descontar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 100000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/inventario/{{productoId}}/descontar\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Cantidad negativa (error)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/{{productoId}}/agregar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "{{productoId}}",
+                "agregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": -2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/inventario/{{productoId}}/agregar\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Producto inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventario/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventario",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/inventario/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 8 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "09 - Resenas",
+      "item": [
+        {
+          "name": "01 Crear resena (guarda resenaId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\",\n  \"producto\": \"{{productoId}}\",\n  \"calificacion\": 5,\n  \"comentario\": \"Excelente producto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/resenas\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.resena && datos.resena._id !== undefined && datos.resena && datos.resena._id !== null) pm.collectionVariables.set(\"resenaId\", datos.resena && datos.resena._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar resenas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/resenas\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Resena por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas/{{resenaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas",
+                "{{resenaId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/resenas/{{resenaId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Actualizar resena",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas/{{resenaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas",
+                "{{resenaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calificacion\": 4,\n  \"comentario\": \"Muy bueno\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/resenas/{{resenaId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Calificacion fuera de rango (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\",\n  \"producto\": \"{{productoId}}\",\n  \"calificacion\": 10,\n  \"comentario\": \"Error\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/resenas\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Usuario inexistente (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"000000000000000000000000\",\n  \"producto\": \"{{productoId}}\",\n  \"calificacion\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/resenas\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Resena inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/resenas/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Eliminar resena",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/resenas/{{resenaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "resenas",
+                "{{resenaId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/resenas/{{resenaId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 9 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "10 - Carrito",
+      "item": [
+        {
+          "name": "01 Consultar carrito vacio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Agregar dos productos al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": \"{{productoId}}\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Consultar carrito con productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Modificar cantidad a tres",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos",
+                "{{productoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Cantidad mayor al stock (error)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos",
+                "{{productoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 100000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Eliminar producto del carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos",
+                "{{productoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos/{{productoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Agregar producto antes de vaciar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": \"{{productoId}}\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Vaciar carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Agregar productos para crear orden",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": \"{{productoId}}\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 Confirmar carrito antes de orden",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 10 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "11 - Ordenes",
+      "item": [
+        {
+          "name": "01 Crear orden desde carrito (guarda ordenId y ordenTotal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/ordenes\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.orden && datos.orden._id !== undefined && datos.orden && datos.orden._id !== null) pm.collectionVariables.set(\"ordenId\", datos.orden && datos.orden._id);",
+                  "  if (datos.orden && datos.orden.total !== undefined && datos.orden && datos.orden.total !== null) pm.collectionVariables.set(\"ordenTotal\", datos.orden && datos.orden.total);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar todas las ordenes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/ordenes\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Orden por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/ordenes/{{ordenId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Ordenes de usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "usuario",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/ordenes/usuario/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Crear orden sin carrito (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/ordenes\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Confirmar orden",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"confirmada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/ordenes/{{ordenId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Saltar estado no permitido (error)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"entregada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/ordenes/{{ordenId}}\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Orden inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/ordenes/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Agregar producto para orden cancelable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/carrito/{{usuarioId}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "carrito",
+                "{{usuarioId}}",
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": \"{{productoId}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/carrito/{{usuarioId}}/productos\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 Crear orden para cancelar (guarda ordenCancelarId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/ordenes\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.orden && datos.orden._id !== undefined && datos.orden && datos.orden._id !== null) pm.collectionVariables.set(\"ordenCancelarId\", datos.orden && datos.orden._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "11 Cancelar orden de prueba (devuelve stock)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenCancelarId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenCancelarId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/ordenes/{{ordenCancelarId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "12 Cancelar orden otra vez (error)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordenes/{{ordenCancelarId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordenes",
+                "{{ordenCancelarId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/ordenes/{{ordenCancelarId}}\nCodigo HTTP esperado: 400\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 11 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "12 - Pagos simulados",
+      "item": [
+        {
+          "name": "01 Monto incorrecto (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orden\": \"{{ordenId}}\",\n  \"monto\": 10,\n  \"metodo\": \"sinpe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Metodo de pago invalido (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orden\": \"{{ordenId}}\",\n  \"monto\": {{ordenTotal}},\n  \"metodo\": \"bitcoin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Orden inexistente (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orden\": \"000000000000000000000000\",\n  \"monto\": {{ordenTotal}},\n  \"metodo\": \"sinpe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 404\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Registrar pago simulado (guarda pagoId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orden\": \"{{ordenId}}\",\n  \"monto\": {{ordenTotal}},\n  \"metodo\": \"sinpe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.pago && datos.pago._id !== undefined && datos.pago && datos.pago._id !== null) pm.collectionVariables.set(\"pagoId\", datos.pago && datos.pago._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Listar pagos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Pago por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/{{pagoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "{{pagoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/pagos/{{pagoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Pago asociado a orden",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/orden/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "orden",
+                "{{ordenId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/pagos/orden/{{ordenId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Intentar pagar dos veces (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orden\": \"{{ordenId}}\",\n  \"monto\": {{ordenTotal}},\n  \"metodo\": \"sinpe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/pagos\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Pago inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/pagos/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 12 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "13 - Historial",
+      "item": [
+        {
+          "name": "01 Historial completo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Historial del usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Detalle de compra",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial/{{usuarioId}}/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial",
+                "{{usuarioId}}",
+                "{{ordenId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial/{{usuarioId}}/{{ordenId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Usuario inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 ID de usuario invalido (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial/123",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial",
+                "123"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial/123\nCodigo HTTP esperado: 400\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Compra inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/historial/{{usuarioId}}/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "historial",
+                "{{usuarioId}}",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/historial/{{usuarioId}}/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 13 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "14 - Contacto",
+      "item": [
+        {
+          "name": "01 Crear mensaje (guarda contactoId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente Prueba\",\n  \"correo\": \"{{clienteCorreo}}\",\n  \"asunto\": \"Disponibilidad\",\n  \"mensaje\": \"Tienen la laptop disponible?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/contacto\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.contacto && datos.contacto._id !== undefined && datos.contacto && datos.contacto._id !== null) pm.collectionVariables.set(\"contactoId\", datos.contacto && datos.contacto._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar mensajes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/contacto\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Mensaje por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto/{{contactoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto",
+                "{{contactoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/contacto/{{contactoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Marcar como respondido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto/{{contactoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto",
+                "{{contactoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"respondido\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/contacto/{{contactoId}}\nCodigo HTTP esperado: 200\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Contacto sin nombre (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"contacto@example.com\",\n  \"asunto\": \"Hola\",\n  \"mensaje\": \"Prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/contacto\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Correo invalido (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba\",\n  \"correo\": \"correo-invalido\",\n  \"asunto\": \"Hola\",\n  \"mensaje\": \"Prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/contacto\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Estado invalido (error)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto/{{contactoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto",
+                "{{contactoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"eliminado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/contacto/{{contactoId}}\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Eliminar mensaje",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto/{{contactoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto",
+                "{{contactoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/contacto/{{contactoId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Consultar mensaje eliminado (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/contacto/{{contactoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contacto",
+                "{{contactoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/contacto/{{contactoId}}\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 14 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "15 - Notificaciones",
+      "item": [
+        {
+          "name": "01 Crear notificacion (guarda notificacionId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\",\n  \"titulo\": \"Compra registrada\",\n  \"mensaje\": \"Tu orden fue registrada\",\n  \"tipo\": \"compra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/notificaciones\nCodigo HTTP esperado: 201\nBody: ver pestaña Body (raw JSON)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  if (datos.notificacion && datos.notificacion._id !== undefined && datos.notificacion && datos.notificacion._id !== null) pm.collectionVariables.set(\"notificacionId\", datos.notificacion && datos.notificacion._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Listar todas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/notificaciones\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Notificaciones de usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "usuario",
+                "{{usuarioId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Notificacion por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/{{notificacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "{{notificacionId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/notificaciones/{{notificacionId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Marcar como leida",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/{{notificacionId}}/leida",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "{{notificacionId}}",
+                "leida"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: PATCH\nURL: {{baseUrl}}/api/notificaciones/{{notificacionId}}/leida\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "06 Sin titulo (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\",\n  \"mensaje\": \"No hay titulo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/notificaciones\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 Tipo invalido (error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{usuarioId}}\",\n  \"titulo\": \"Prueba\",\n  \"mensaje\": \"Prueba\",\n  \"tipo\": \"xyz\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: POST\nURL: {{baseUrl}}/api/notificaciones\nCodigo HTTP esperado: 400\nBody: ver pestaña Body (raw JSON).\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 Notificacion inexistente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/000000000000000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "000000000000000000000000"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/notificaciones/000000000000000000000000\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 Eliminar notificacion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/{{notificacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "{{notificacionId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: DELETE\nURL: {{baseUrl}}/api/notificaciones/{{notificacionId}}\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 Consultar notificacion eliminada (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notificaciones/{{notificacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notificaciones",
+                "{{notificacionId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/notificaciones/{{notificacionId}}\nCodigo HTTP esperado: 404\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 15 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    },
+    {
+      "name": "16 - PanelAdmin",
+      "item": [
+        {
+          "name": "01 Estadisticas como administrador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/estadisticas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "estadisticas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/admin/estadisticas\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 Inventario bajo como administrador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/inventario-bajo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "inventario-bajo"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/admin/inventario-bajo\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 Ultimas ordenes como administrador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ultimas-ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ultimas-ordenes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/admin/ultimas-ordenes\nCodigo HTTP esperado: 200\nBody: no requiere Body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 Estadisticas sin token (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/estadisticas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "estadisticas"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/admin/estadisticas\nCodigo HTTP esperado: 401\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 Estadisticas como cliente (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/estadisticas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "estadisticas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Metodo: GET\nURL: {{baseUrl}}/api/admin/estadisticas\nCodigo HTTP esperado: 403\nBody: no requiere Body.\nCaso negativo: obtener el codigo HTTP de error esperado significa que la validacion funciono."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Respuesta JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ],
+      "description": "Modulo 16 de 16. Ejecutar sus peticiones en orden; las pruebas de error son esperadas y verifican las validaciones."
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "adminCorreo",
+      "value": "admin.postman@example.com",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "AdminDemo2026!",
+      "type": "string"
+    },
+    {
+      "key": "clientePassword",
+      "value": "ClienteDemo2026!",
+      "type": "string"
+    },
+    {
+      "key": "tokenCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteCorreo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuarioExtraId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoriaTemporalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productoTemporalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resenaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ordenId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ordenTotal",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ordenCancelarId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pagoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificacionId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
