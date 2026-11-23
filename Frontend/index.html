@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es-CR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="img/logo.svg" />
+    <title>Catálogo | TechStore</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/estilos.css" />
+    <script type="module" src="js/tienda.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="container top">
+        <a class="brand" href="index.html"
+          ><img src="img/logo.svg" width="34" height="34" alt="" /> TechStore</a
+        >
+        <nav aria-label="Principal">
+          <a href="index.html" aria-current="page">Catálogo</a
+          ><a href="pedidos.html">Mis compras</a
+          ><a href="contacto.html">Contacto</a
+          ><a href="gestion.html" id="adminLink" hidden>Administración</a
+          ><a href="cuenta.html">Mi cuenta</a><a href="carrito.html">Carrito</a>
+        </nav>
+      </div>
+    </header>
+    <main class="container">
+      <div id="notice" role="status"></div>
+      <section class="hero">
+        <div class="hero-inner container">
+          <div>
+            <h1>Tecnología para tu próximo setup</h1>
+            <p>
+              Explorá componentes, periféricos y accesorios gamer. Consultá el
+              stock y armá tu pedido en TechStore.
+            </p>
+            <a class="cta" href="#catalogo">Ver catálogo</a>
+            <a class="hero-link" href="cuenta.html">Mi cuenta</a>
+          </div>
+          <img
+            src="img/hero.svg"
+            width="520"
+            height="400"
+            alt="Ilustración de una laptop y un celular"
+          />
+        </div>
+      </section>
+      <section id="categoryArea" hidden>
+        <h2>Explorá por categoría</h2>
+        <div id="categoryCards"></div>
+      </section>
+      <section id="catalogo">
+        <div class="heading">
+          <h2>Catálogo</h2>
+          <button id="featured" aria-pressed="false">★ Destacados</button>
+        </div>
+        <form id="filters" class="filters">
+          <label
+            >Buscar producto<input
+              name="nombre"
+              placeholder="Ej. teclado mecánico" /></label
+          ><label
+            >Categoría<select name="categoria">
+              <option value="">Todas</option>
+            </select></label
+          ><label
+            >Precio mínimo<input
+              type="number"
+              name="precioMin"
+              min="0"
+              step="any"
+              placeholder="₡ 0" /></label
+          ><label
+            >Precio máximo<input
+              type="number"
+              name="precioMax"
+              min="0"
+              step="any"
+              placeholder="Sin límite" /></label
+          ><button class="primary">Buscar</button
+          ><button type="reset">Limpiar</button>
+        </form>
+        <p id="count"></p>
+        <div id="products" class="cards"></div>
+      </section>
+    </main>
+    <footer>
+      <div class="container footer-inner">
+        <div>
+          <strong
+            ><img src="img/logo.svg" alt="" width="26" height="26" />
+            TechStore</strong
+          >
+          <p>Componentes de computadora y periféricos gamer.</p>
+        </div>
+        <nav aria-label="Tienda">
+          <strong>Tienda</strong><a href="index.html#catalogo">Catálogo</a
+          ><a href="carrito.html">Carrito</a
+          ><a href="pedidos.html">Mis compras</a>
+        </nav>
+        <nav aria-label="Ayuda">
+          <strong>Ayuda</strong><a href="contacto.html">Contacto</a
+          ><a href="cuenta.html">Mi cuenta</a>
+        </nav>
+      </div>
+    </footer>
+    <dialog id="modal">
+      <div class="heading">
+        <h2 id="modalTitle"></h2>
+        <button id="closeModal" aria-label="Cerrar">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </dialog>
+  </body>
+</html>

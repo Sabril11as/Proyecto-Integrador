@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es-CR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="img/logo.svg" />
+    <title>Administración | TechStore</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/estilos.css" />
+    <script type="module" src="js/gestion.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="container top">
+        <a class="brand" href="index.html"
+          ><img src="img/logo.svg" width="34" height="34" alt="" /> TechStore</a
+        >
+        <nav aria-label="Principal">
+          <a href="index.html">Catálogo</a><a href="pedidos.html">Mis compras</a
+          ><a href="contacto.html">Contacto</a
+          ><a href="gestion.html" aria-current="page" id="adminLink" hidden
+            >Administración</a
+          ><a href="cuenta.html">Mi cuenta</a><a href="carrito.html">Carrito</a>
+        </nav>
+      </div>
+    </header>
+    <main class="container">
+      <div id="notice" role="status"></div>
+      <h1>Administración</h1>
+      <div id="admin"></div>
+    </main>
+    <footer>
+      <div class="container footer-inner">
+        <div>
+          <strong
+            ><img src="img/logo.svg" alt="" width="26" height="26" />
+            TechStore</strong
+          >
+          <p>Componentes de computadora y periféricos gamer.</p>
+        </div>
+        <nav aria-label="Tienda">
+          <strong>Tienda</strong><a href="index.html#catalogo">Catálogo</a
+          ><a href="carrito.html">Carrito</a
+          ><a href="pedidos.html">Mis compras</a>
+        </nav>
+        <nav aria-label="Ayuda">
+          <strong>Ayuda</strong><a href="contacto.html">Contacto</a
+          ><a href="cuenta.html">Mi cuenta</a>
+        </nav>
+      </div>
+    </footer>
+    <dialog id="modal">
+      <div class="heading">
+        <h2 id="modalTitle"></h2>
+        <button id="closeModal" aria-label="Cerrar">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </dialog>
+  </body>
+</html>
